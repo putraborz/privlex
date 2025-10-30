@@ -18,6 +18,7 @@ textarea{width:100%;height:200px;background:rgba(255,255,255,0.03);color:#e6eef8
 .history-list{max-height:250px;overflow:auto;background:rgba(0,0,0,0.35);padding:10px;border-radius:8px;width:100%;transition:all .3s;}
 .history-item{display:flex;justify-content:space-between;align-items:center;padding:6px;margin-bottom:6px;background:linear-gradient(90deg,rgba(255,255,255,0.01),transparent);border-radius:6px;transition:all .5s;opacity:0;}
 .history-item.show{opacity:1;}
+.history-item.fade-out{opacity:0;transition:opacity 2s ease;}
 .rainbow-text{animation:rainbow 4s linear infinite}
 @keyframes rainbow{0%{color:#ff3b3b}16%{color:#ffdd57}32%{color:#3bffb0}48%{color:#7aa2ff}64%{color:#ff3b3b}80%{color:#ffdd57}100%{color:#3bffb0}}
 .avatar{width:24px;height:24px;border-radius:50%;margin-right:6px;}
@@ -81,28 +82,42 @@ function renderEntries(){
   entriesList.innerHTML='';
   if(entriesCache.length===0){ entriesList.innerHTML='<div class="small">No whitelist entries</div>'; return; }
   const now = Date.now();
-  entriesCache.forEach(e=>{
+  entriesCache.forEach((e)=>{
     const div=document.createElement('div'); div.className='history-item';
     setTimeout(()=>div.classList.add('show'),50);
-    const avatarUrl=`https://github.com/${e.value}.png?size=24`;
-    let expireText = '';
-    if(e.expiresAt){ 
-      const remaining = Math.max(0, e.expiresAt - now);
-      expireText = ' • Expires in ' + msToTime(remaining);
-    }
+    const avatarUrl=`https://github.com/${e.value.split(' ')[0]}.png?size=24`;
+    const spanExpire = document.createElement('span'); spanExpire.className='rainbow-text';
     div.innerHTML=`<div class="entry-left">
       <img src="${avatarUrl}" class="avatar" onerror="this.src='https://via.placeholder.com/24'">
-      <div><b>${e.value}</b><br><span class="rainbow-text">${ttlLabel(e.ttlVal)}${expireText}</span></div>
+      <div><b>${e.value}</b><br></div>
     </div>`;
+    div.querySelector('div').appendChild(spanExpire);
     entriesList.appendChild(div);
+    e.dom = spanExpire;
 
-    if(e.expiresAt){
-      const interval = setInterval(()=>{
-        const remaining = Math.max(0, e.expiresAt - Date.now());
-        div.querySelector('.rainbow-text').textContent = ttlLabel(e.ttlVal) + ' • Expires in ' + msToTime(remaining);
-      },1000);
-    }
+    updateCountdownFade(e, div);
   });
+}
+
+function updateCountdownFade(e, div){
+  if(!e.expiresAt) return;
+  const interval = setInterval(async ()=>{
+    const remaining = e.expiresAt - Date.now();
+    if(remaining <= 0){
+      // Fade out
+      div.classList.add('fade-out');
+      setTimeout(async ()=>{
+        entriesCache = entriesCache.filter(x=>x!==e);
+        editor.value = entriesCache.map(x=>x.value).join('\n');
+        renderEntries();
+        await saveFile();
+        toast(`Entry expired and removed: ${e.value}`);
+      },2000); // durasi fade-out sesuai CSS
+      clearInterval(interval);
+      return;
+    }
+    e.dom.textContent = ttlLabel(e.ttlVal)+' • Expires in '+msToTime(remaining);
+  },1000);
 }
 
 async function loadFile(){
@@ -116,9 +131,9 @@ async function loadFile(){
     editor.value=raw;
     entriesCache=raw.split(/\r?\n/).map(l=>{
       if(!l.trim()) return null;
-      const [value, exp] = l.split('|');
+      const [valuePart, exp] = l.split(' --');
       let expiresAt = ['perm','vip'].includes(exp)? null : Number(exp);
-      return {value, ttlVal: exp || 'perm', expiresAt};
+      return {value: valuePart + (exp ? ' --' + exp : ''), ttlVal: exp || 'perm', expiresAt};
     }).filter(Boolean);
     renderEntries();
     toast('File loaded ✅');
@@ -139,8 +154,7 @@ async function saveFile(){
       body:JSON.stringify({message:'Update vip.txt',content:contentB64,sha})
     });
     if(!putResp.ok) throw new Error('Failed to save: '+putResp.status);
-    toast('Saved to GitHub ✅');
-  }catch(e){ toast(e.message); }
+  }catch(e){ console.error(e); toast(e.message); }
 }
 
 btnAdd.onclick = async () => {
@@ -149,11 +163,9 @@ btnAdd.onclick = async () => {
   const ttl = ttlSelect.value;
   const exp = parseTTL(ttl);
 
-  entriesCache.push({value: val, ttlVal: ttl, expiresAt: exp});
-  editor.value = entriesCache.map(e=>{
-    if(e.ttlVal==='perm'||e.ttlVal==='vip') return `${e.value}|${e.ttlVal}`;
-    return `${e.value}|${e.expiresAt}`;
-  }).join('\n');
+  const entry = {value: val + ' --' + (exp || ttl), ttlVal: ttl, expiresAt: exp};
+  entriesCache.push(entry);
+  editor.value = entriesCache.map(e=>e.value).join('\n');
 
   renderEntries();
   newEntry.value = '';
