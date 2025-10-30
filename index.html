@@ -38,6 +38,7 @@ textarea{
   border-radius:6px;transition:all .5s;opacity:0;
 }
 .history-item.show{opacity:1;}
+.history-item.fade-out{opacity:0;transition:all .5s;}
 .rainbow-text{animation:rainbow 4s linear infinite}
 @keyframes rainbow{
 0%{color:#ff3b3b}16%{color:#ffdd57}32%{color:#3bffb0}48%{color:#7aa2ff}64%{color:#ff3b3b}80%{color:#ffdd57}100%{color:#3bffb0}
@@ -86,13 +87,10 @@ textarea{
 </div>
 
 <textarea id="editor" placeholder="Raw vip.txt content"></textarea>
-
 <div class="history-list" id="entriesList"></div>
-
 <div id="notif"></div>
 
 <script>
-// Utils
 const $ = id => document.getElementById(id);
 const ownerEl=$('owner'), repoEl=$('repo'), pathEl=$('path'), tokenEl=$('token'), editor=$('editor'), entriesList=$('entriesList');
 const btnLoad=$('btnLoad'), btnAdd=$('btnAdd'), btnSave=$('btnSave'), newEntry=$('newEntry'), ttlSelect=$('ttlSelect'), notif=$('notif');
@@ -101,23 +99,20 @@ function toast(msg){ notif.textContent=msg; notif.style.display='block'; setTime
 function parseTTL(ttl){ if(ttl==='perm'||ttl==='vip') return null; if(ttl.endsWith('m')) return Date.now()+parseInt(ttl)*60000; if(ttl.endsWith('h')) return Date.now()+parseInt(ttl)*3600000; if(ttl.endsWith('d')) return Date.now()+parseInt(ttl)*24*3600000; return null; }
 function ttlLabel(ttl){ if(ttl==='perm') return 'Permanent'; if(ttl==='vip') return 'VIP'; if(ttl.endsWith('m')) return ttl.replace('m',' minute(s)'); if(ttl.endsWith('h')) return ttl.replace('h',' hour(s)'); if(ttl.endsWith('d')) return ttl.replace('d',' day(s)'); return ttl; }
 
-// Core
 let entriesCache=[];
 
-// Render entries with avatar + fade-in
 function renderEntries(){
   entriesList.innerHTML='';
   if(entriesCache.length===0){ entriesList.innerHTML='<div class="small">No whitelist entries</div>'; return; }
-  entriesCache.forEach(e=>{
+  entriesCache.forEach((e,i)=>{
     const div=document.createElement('div'); div.className='history-item';
-    setTimeout(()=>div.classList.add('show'),50); // fade-in
-    const avatarUrl = `https://github.com/${e.value}.png?size=24`;
+    setTimeout(()=>div.classList.add('show'),50);
+    const avatarUrl=`https://github.com/${e.value}.png?size=24`;
     div.innerHTML=`<div class="entry-left"><img src="${avatarUrl}" class="avatar" onerror="this.src='https://via.placeholder.com/24'"><div><b>${e.value}</b><br><span class="rainbow-text">${ttlLabel(e.ttlVal)}${e.expiresAt?' • Expires: '+new Date(e.expiresAt).toLocaleTimeString() : ''}</span></div></div>`;
     entriesList.appendChild(div);
   });
 }
 
-// Load vip.txt and history.json
 async function loadFile(){
   const owner=ownerEl.value.trim(), repo=repoEl.value.trim(), path=pathEl.value.trim();
   if(!owner||!repo||!path) return toast('Owner/Repo/Path required');
@@ -128,37 +123,33 @@ async function loadFile(){
     const raw=await r.text();
     editor.value=raw;
     const lines=raw.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
-    const histPath=path.split('/').slice(0,-1).concat(['history.json']).join('/');
-    let history=[];
-    try{
-      const rh=await fetch(`https://raw.githubusercontent.com/${owner}/${repo}/main/${histPath}`);
-      if(rh.ok){ const txt=await rh.text(); history=JSON.parse(txt);}
-    }catch(e){}
-    entriesCache=lines.map(v=>{ const meta=history.find(h=>h.entryValue===v); return {value:v, ttlVal: meta?.ttlVal||'perm', expiresAt: meta?.expiresAt||null};});
+    entriesCache=lines.map(v=>({value:v,ttlVal:'perm',expiresAt:null}));
     renderEntries();
     toast('File loaded ✅');
   }catch(e){ toast(e.message); }
 }
 
-// Add entry
 btnAdd.onclick=()=>{
   const val=newEntry.value.trim(); if(!val) return toast('Entry empty');
   const ttl=ttlSelect.value; const exp=parseTTL(ttl);
   entriesCache.push({value:val,ttlVal:ttl,expiresAt:exp});
   editor.value=entriesCache.map(e=>e.value).join('\n');
-  renderEntries(); newEntry.value='';
-  toast('Entry added ✅');
+  renderEntries(); newEntry.value=''; toast('Entry added ✅');
 };
 
-// Auto-expire loop
 function autoExpireLoop(){
-  const now=Date.now(), before=entriesCache.length;
-  entriesCache=entriesCache.filter(e=>!e.expiresAt || e.expiresAt>now);
-  if(entriesCache.length<before){ editor.value=entriesCache.map(e=>e.value).join('\n'); renderEntries(); }
+  const now=Date.now(); let changed=false;
+  entriesCache=entriesCache.filter(e=>{
+    if(e.expiresAt && e.expiresAt<=now){ changed=true; return false; }
+    return true;
+  });
+  if(changed){
+    editor.value=entriesCache.map(e=>e.value).join('\n');
+    renderEntries(); toast('Expired entries removed ✅');
+  }
   setTimeout(autoExpireLoop,1000);
 }
 
-// Save to GitHub
 async function saveFile(){
   const owner=ownerEl.value.trim(), repo=repoEl.value.trim(), path=pathEl.value.trim(), token=tokenEl.value.trim();
   if(!owner||!repo||!path||!token) return toast('Owner/Repo/Path/Token required');
@@ -178,9 +169,7 @@ async function saveFile(){
   }catch(e){ toast(e.message); }
 }
 
-// Init
-btnLoad.onclick=loadFile;
-btnSave.onclick=saveFile;
+btnLoad.onclick=loadFile; btnSave.onclick=saveFile;
 autoExpireLoop();
 </script>
 </body>
