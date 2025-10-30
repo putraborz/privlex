@@ -1,42 +1,37 @@
 name: Auto Remove Expired Entries
-
 on:
-  schedule:
-    - cron: '*/5 * * * *'
-  workflow_dispatch:
+schedule:
+- cron: '*/5 * * * *' # setiap 5 menit
+workflow_dispatch:
+
 
 jobs:
-  remove-expired:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Remove expired
-        run: |
-          node -e "
-          const fs = require('fs');
-          const path = './Loader/vip.txt';
-          if (!fs.existsSync(path)) process.exit(0);
-          const now = Date.now();
-          const lines = fs.readFileSync(path,'utf8').split(/\r?\n/).filter(Boolean);
-          let changed = false;
-          const newLines = lines.filter(l=>{
-            const [u,e] = l.split('|');
-            if(['perm','vip'].includes(e)) return true;
-            if(Number(e) > now) return true;
-            changed = true; return false;
-          });
-          if(changed){
-            fs.writeFileSync(path,newLines.join('\n'),'utf8');
-            console.log('Expired entries removed ✅');
-          } else console.log('No expired entries.');
-          "
-      - name: Commit & Push
-        if: success()
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Loader/vip.txt
-          git commit -m "Auto-remove expired entries" || echo "No changes"
-          git push
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+remove-expired:
+runs-on: ubuntu-latest
+steps:
+- uses: actions/checkout@v3
+- name: Remove expired
+run: |
+node -e "
+const fs = require('fs');
+const path = './Loader/vip.txt';
+if (!fs.existsSync(path)) process.exit(0);
+const now = Date.now();
+const lines = fs.readFileSync(path,'utf8').split(/\r?\n/).filter(Boolean);
+const newLines = lines.filter(l=>{
+const [u,e] = l.split('|');
+if(['perm','vip'].includes(e)) return true;
+return Number(e) > now;
+});
+if(newLines.length !== lines.length){
+fs.writeFileSync(path,newLines.join('\n'),'utf8');
+}"
+- name: Commit & Push
+run: |
+git config user.name "github-actions[bot]"
+git config user.email "github-actions[bot]@users.noreply.github.com"
+git add Loader/vip.txt
+git commit -m "Auto-remove expired entries" || echo "No changes"
+git push
+env:
+GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
