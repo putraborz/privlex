@@ -71,6 +71,8 @@ footer{width:100%;text-align:center;color:var(--muted);font-size:13px;padding:18
         <div style="display:flex;gap:10px;align-items:center;">
           <input id="newEntry" type="text" placeholder="Add new whitelist entry (e.g. username or token)" style="flex:1"/>
           <select id="ttlSelect" title="Time to live" style="width:180px;margin-left:8px">
+            <option value="2m">2 minutes</option>
+            <option value="5m">5 minutes</option>
             <option value="1h">1 hour</option>
             <option value="6h">6 hours</option>
             <option value="12h">12 hours</option>
@@ -148,148 +150,86 @@ const historyPanel = $('historyPanel'), historyList = $('historyList'), previewB
 const newEntryEl = $('newEntry'), ttlSelect = $('ttlSelect');
 
 function toast(msg, ok=true){ notif.textContent=msg; notif.style.background= ok? 'linear-gradient(90deg,#052e11,#083b21)' : 'linear-gradient(90deg,#3a0710,#5b0f18)'; notif.classList.add('show'); setTimeout(()=>notif.classList.remove('show'),3200); }
-
 function nowWIBPretty(){ return new Intl.DateTimeFormat('id-ID',{timeZone:'Asia/Jakarta',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(new Date()).replace(',',''); }
-function parseTTL(ttlVal){ if(!ttlVal||ttlVal==='perm'||ttlVal==='vip') return null; if(ttlVal.endsWith('h')) return Date.now() + parseInt(ttlVal) * 3600000; if(ttlVal.endsWith('d')) return Date.now() + parseInt(ttlVal) * 24 * 3600000; return null; }
-function ttlLabel(ttlVal){ if(ttlVal==='perm') return 'Permanent'; if(ttlVal==='vip') return 'VIP (Permanent)'; if(ttlVal.endsWith('h')) return ttlVal.replace('h',' hour(s)'); if(ttlVal.endsWith('d')) return ttlVal.replace('d',' day(s)'); return ttlVal; }
-function escapeHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function b64(s){ return btoa(unescape(encodeURIComponent(s))); }
-function unb64(s){ try{return decodeURIComponent(escape(atob(s)));}catch(e){return atob(s);} }
+function parseTTL(ttlVal){
+  if(!ttlVal||ttlVal==='perm'||ttlVal==='vip') return null;
+  if(ttlVal.endsWith('m')) return Date.now() + parseInt(ttlVal) * 60000;
+  if(ttlVal.endsWith('h')) return Date.now() + parseInt(ttlVal) * 3600000;
+  if(ttlVal.endsWith('d')) return Date.now() + parseInt(ttlVal) * 24 * 3600000;
+  return null;
+}
+function ttlLabel(ttlVal){
+  if(ttlVal==='perm') return 'Permanent';
+  if(ttlVal==='vip') return 'VIP (Permanent)';
+  if(ttlVal.endsWith('m')) return ttlVal.replace('m',' minute(s)');
+  if(ttlVal.endsWith('h')) return ttlVal.replace('h',' hour(s)');
+  if(ttlVal.endsWith('d')) return ttlVal.replace('d',' day(s)');
+  return ttlVal;
+}
 
 /* GitHub helpers */
 async function ghGetContent(owner,repo,filepath,token){ const url=`https://api.github.com/repos/${owner}/${repo}/contents/${filepath}`; const headers={'Accept':'application/vnd.github.v3+json'}; if(token) headers['Authorization']='token '+token; const res=await fetch(url,{headers}); if(!res.ok) throw new Error('GET failed: '+res.status+' '+(await res.text())); return await res.json(); }
 async function ghPutContent(owner,repo,filepath,message,contentB64,sha,token){ const url=`https://api.github.com/repos/${owner}/${repo}/contents/${filepath}`; const body={message,content:contentB64}; if(sha) body.sha=sha; const res=await fetch(url,{method:'PUT',headers:{'Accept':'application/vnd.github.v3+json','Content-Type':'application/json','Authorization':'token '+token},body:JSON.stringify(body)}); const j=await res.json(); if(!res.ok) throw new Error(j.message||JSON.stringify(j)); return j; }
 
 /* Core */
-let currentHistory=[];
 let entriesCache=[];
+let currentHistory=[];
 
-function historyPathFrom(p){ const parts=p.split('/'); parts.pop(); parts.push('history.json'); return parts.join('/'); }
-function getDefaults(){ return { owner: ownerEl.value.trim(), repo: repoEl.value.trim(), path: pathEl.value.trim() }; }
-
-async function loadFile(){
-  const {owner,repo,path}=getDefaults(); if(!owner||!repo||!path) return toast('owner/repo/path required',false);
-  try{
-    toast('Loading vip.txt...');
-    const j = await ghGetContent(owner,repo,path,null).catch(async err=>{
-      const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/${path}`;
-      const r = await fetch(rawUrl); if(!r.ok) throw err; return { content: b64(await r.text()) };
-    });
-    const raw = j.content ? unb64(j.content.replace(/\n/g,'')) : '';
-    editor.value = raw;
-    shaEl.textContent = j.sha || '-';
-    const histPath=historyPathFrom(path);
-    try {
-      const token = tokenEl.value.trim() || null;
-      const hist = await ghGetContent(owner,repo,histPath,token);
-      const txt = hist.content ? unb64(hist.content.replace(/\n/g,'')) : '';
-      currentHistory = txt ? JSON.parse(txt) : [];
-      localStorage.setItem(`${owner}/${repo}/${histPath}`,JSON.stringify(currentHistory));
-      toast('History loaded from GitHub',true);
-    } catch(e){
-      const key=`${owner}/${repo}/${historyPathFrom(path)}`;
-      const local=localStorage.getItem(key);
-      if(local){ currentHistory=JSON.parse(local); toast('Loaded history from localStorage',true); } else { currentHistory=[]; toast('No history found',true); }
-    }
-
-    rebuildEntriesFromHistory(editor.value,currentHistory);
-    await processExpirations(false); // otomatis hapus expired entries saat load
-    renderEntriesList();
-    renderHistorySummary();
-  } catch(e){ toast('Load error: '+e.message,false); }
-}
-
-function rebuildEntriesFromHistory(rawVipText, historyArr) {
-  const lines = rawVipText.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
-  const metaMap = {};
-  for (const h of historyArr) { if (h.entryValue) { if (!metaMap[h.entryValue]) metaMap[h.entryValue] = h; } }
-  const now = Date.now();
-
-  entriesCache = lines.map(v => {
-    const meta = metaMap[v] || null;
-    let ttlVal = meta && meta.ttlVal ? meta.ttlVal : (meta && meta.note === 'vip' ? 'vip' : 'perm');
-    let expiresAt = meta && meta.expiresAt ? meta.expiresAt : null;
-    if (!expiresAt && ttlVal && ttlVal !== 'perm' && ttlVal !== 'vip') { expiresAt = parseTTL(ttlVal); }
-    return { value: v, addedAt: meta ? meta.timestamp : null, expiresAt, ttlVal, note: meta ? meta.note : '' };
-  }).filter(e => !(e.expiresAt && e.expiresAt < now));
-}
-
-async function processExpirations(autoCommit = false) {
-  const now = Date.now();
-  entriesCache.forEach(e => { if (!e.expiresAt && e.ttlVal && e.ttlVal !== 'perm' && e.ttlVal !== 'vip') { e.expiresAt = parseTTL(e.ttlVal); } });
-  const before = entriesCache.length;
-  entriesCache = entriesCache.filter(e => !e.expiresAt || e.expiresAt > now);
-  const removed = before - entriesCache.length;
-  writeEditorFromEntries();
-  renderEntriesList();
-  toast(`Processed expirations: removed ${removed} expired entries`, true);
-  if (autoCommit) { await saveFile(); }
-}
-
+function writeEditorFromEntries(){ editor.value = entriesCache.map(e=>e.value).join('\n'); }
 function renderEntriesList(){
   entriesList.innerHTML='';
   if(entriesCache.length===0){ entriesList.innerHTML='<div class="small">No whitelist entries</div>'; return; }
-  entriesCache.forEach((ent,i)=>{
-    const div=document.createElement('div'); div.className='entry-row';
-    div.innerHTML=`<div>${escapeHtml(ent.value)}</div><div class="tag-pill">${ent.ttlVal?ttlLabel(ent.ttlVal):''}</div>`;
+  entriesCache.forEach((ent,idx)=>{
+    const div=document.createElement('div'); div.className='history-item';
+    const left=document.createElement('div'); left.innerHTML=`<div style="font-weight:700">${ent.value}</div><div class="small">${ttlLabel(ent.ttlVal)}${ent.expiresAt?' • Expires: '+new Date(ent.expiresAt).toLocaleString('id-ID') : ''}</div>`;
+    const right=document.createElement('div'); right.style.display='flex'; right.style.gap='8px';
+    const btnDel=document.createElement('button'); btnDel.className='ghost'; btnDel.textContent='Delete';
+    const btnEdit=document.createElement('button'); btnEdit.className='ghost'; btnEdit.textContent='Edit';
+    btnDel.onclick=()=>{ if(confirm('Delete entry permanently?')){ entriesCache.splice(idx,1); writeEditorFromEntries(); renderEntriesList(); toast('Entry removed (not yet saved). Press Save to commit)'); } };
+    btnEdit.onclick=()=>{ const v=prompt('Edit entry', ent.value); if(v!==null){ entriesCache[idx].value=v.trim(); writeEditorFromEntries(); renderEntriesList(); toast('Edited (not saved). Press Save to commit)'); } };
+    right.appendChild(btnEdit); right.appendChild(btnDel);
+    div.appendChild(left); div.appendChild(right);
     entriesList.appendChild(div);
   });
 }
 
-function renderHistorySummary(){
-  historySummary.innerHTML='';
-  if(!currentHistory.length){ historySummary.innerHTML='<div class="small">No history</div>'; return; }
-  currentHistory.slice(-10).reverse().forEach(h=>{
-    const div=document.createElement('div'); div.className='history-item';
-    const timeStr = h.timestamp? new Date(h.timestamp).toLocaleString('id-ID'): '-';
-    div.innerHTML=`<div>${escapeHtml(h.entryValue||'')}</div><div class="small">${timeStr} | ${h.ttlVal||''}</div>`;
-    historySummary.appendChild(div);
+// ===== Auto-expire loop =====
+function autoExpireLoop() {
+  const now = Date.now();
+  let expiredCount = 0;
+  entriesCache = entriesCache.filter(e => {
+    if(e.expiresAt && e.expiresAt <= now){
+      expiredCount++;
+      return false;
+    }
+    return true;
   });
+  if(expiredCount > 0){
+    writeEditorFromEntries();
+    renderEntriesList();
+    toast(`${expiredCount} expired entr${expiredCount>1?'ies':'y'} removed automatically`);
+  }
+  setTimeout(autoExpireLoop, 10000);
 }
 
-function writeEditorFromEntries(){ editor.value = entriesCache.map(e=>e.value).join('\n'); }
+// UI events
+btnAdd.onclick=()=>{
+  const val=newEntryEl.value.trim(); if(!val) return toast('Entry cannot be empty',false);
+  const ttlVal=ttlSelect.value; const expiresAt=parseTTL(ttlVal);
+  const timestamp=Date.now();
+  entriesCache.push({value:val,ttlVal,expiresAt,addedAt:timestamp});
+  currentHistory.push({entryValue:val,ttlVal,expiresAt,timestamp,note:'manual'});
+  writeEditorFromEntries(); renderEntriesList(); newEntryEl.value=''; toast('Entry added',true);
+};
 
-async function saveFile(){
-  const token = tokenEl.value.trim(); if(!token) return toast('Token required', false);
-  await processExpirations(false);
-  const {owner,repo,path}=getDefaults(); if(!owner||!repo||!path) return toast('owner/repo/path required', false);
-  try{
-    toast('Saving...');
-    const contentB64 = b64(editor.value);
-    const message = `Update vip.txt via PANEL LEX HOST @ ${nowWIBPretty()}`;
-    const sha = shaEl.textContent && shaEl.textContent!=='-' ? shaEl.textContent : null;
-    const r = await ghPutContent(owner,repo,path,message,contentB64,sha,token);
-    shaEl.textContent = r.content.sha;
-    toast('vip.txt saved successfully', true);
+btnClear.onclick=()=>{ editor.value=''; toast('Editor cleared',true); };
+btnPreview.onclick=()=>{ previewBox.style.display='block'; previewBox.textContent = entriesCache.map(e=>`${e.value} [${ttlLabel(e.ttlVal)}]`).join('\n'); };
+btnHistory.onclick=()=>{ historyPanel.style.display='block'; historyList.innerHTML=currentHistory.map(e=>`${new Date(e.addedAt).toLocaleString()} • ${e.entryValue} • ${ttlLabel(e.ttlVal)}`).join('<br>'); };
+btnCloseHistory.onclick=()=>{ historyPanel.style.display='none'; };
+btnRefreshHistory.onclick=()=>{ historyList.innerHTML=currentHistory.map(e=>`${new Date(e.addedAt).toLocaleString()} • ${e.entryValue} • ${ttlLabel(e.ttlVal)}`).join('<br>'); };
 
-    // update history.json
-    const histPath = historyPathFrom(path);
-    const timestamp = Date.now();
-    entriesCache.forEach(e=>{ currentHistory.push({ entryValue:e.value, ttlVal:e.ttlVal, expiresAt:e.expiresAt, note:e.note, timestamp }); });
-    const histContentB64 = b64(JSON.stringify(currentHistory,null,2));
-    await ghPutContent(owner,repo,histPath,`Update history.json via PANEL LEX HOST @ ${nowWIBPretty()}`,histContentB64,null,token);
-    localStorage.setItem(`${owner}/${repo}/${histPath}`,JSON.stringify(currentHistory));
-    renderHistorySummary();
-  } catch(e){ toast('Save error: '+e.message,false); }
-}
-
-/* Event listeners */
-btnLoad.addEventListener('click',loadFile);
-btnSave.addEventListener('click',saveFile);
-btnProcess.addEventListener('click',()=>processExpirations(true));
-btnAdd.addEventListener('click',()=>{
-  const val=newEntryEl.value.trim(); if(!val) return;
-  const ttl = ttlSelect.value || 'perm';
-  entriesCache.push({ value: val, ttlVal: ttl, expiresAt: parseTTL(ttl), note:'manual', addedAt:Date.now() });
-  writeEditorFromEntries();
-  renderEntriesList();
-  newEntryEl.value=''; toast(`Added entry: ${val}`,true);
-});
-btnClear.addEventListener('click',()=>{ editor.value=''; entriesCache=[]; renderEntriesList(); toast('Editor cleared',true); });
-btnPreview.addEventListener('click',()=>{ previewBox.style.display='block'; previewBox.textContent=editor.value; });
-btnHistory.addEventListener('click',()=>{ historyPanel.style.display='block'; });
-btnCloseHistory.addEventListener('click',()=>{ historyPanel.style.display='none'; });
-btnRefreshHistory.addEventListener('click',()=>{ renderHistorySummary(); toast('History refreshed',true); });
+// Start auto-expire loop
+autoExpireLoop();
 
 </script>
 </body>
