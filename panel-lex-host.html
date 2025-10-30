@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>PANEL LEX HOST — Whitelist Web Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg1:#060612; --card:rgba(255,255,255,0.03); --muted:#9fb3c9; --accent1:#06b6d4; --accent2:#8b5cf6;
+  --success:#22c55e; --danger:#ef4444;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Poppins,Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:linear-gradient(120deg,#020617,#07102a 40%,#0b1220 100%);color:#e6eef8;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+header{padding:36px 16px 8px;text-align:center}
+h1{font-size:44px;margin:0;font-weight:800;letter-spacing:6px;animation:rgbText 6s linear infinite}
+@keyframes rgbText{0%{color:#ff3b3b}25%{color:#ffdd57}50%{color:#3bffb0}75%{color:#7aa2ff}100%{color:#ff3b3b}}
+.sub{color:var(--muted);margin-top:8px}
+.byline{color:var(--muted);font-size:13px;margin-top:4px}
+main{width:100%;max-width:1200px;padding:20px}
+.card{background:var(--card);border-radius:14px;padding:18px;box-shadow:0 10px 30px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.02)}
+.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.group{display:flex;gap:8px;align-items:center}
+label.tag{font-size:12px;color:var(--muted);padding:6px 8px;border-radius:8px;background:rgba(0,0,0,0.25)}
+input[type=text], input[type=password], select{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.04);padding:10px;border-radius:10px;color:inherit;min-width:160px}
+button{background:linear-gradient(90deg,var(--accent1),var(--accent2));border:none;padding:10px 14px;border-radius:10px;color:#001;font-weight:700;cursor:pointer}
+button.ghost{background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.04)}
+textarea{width:100%;min-height:220px;border-radius:12px;padding:14px;font-family:ui-monospace,Menlo,monospace;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));color:#e6eef8;border:1px solid rgba(255,255,255,0.03);resize:vertical;outline:none;display:block}
+.row{display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.box{background:rgba(0,0,0,0.35);padding:12px;border-radius:10px}
+.history-list{margin-top:12px;max-height:260px;overflow:auto;border-radius:10px;border:1px solid rgba(255,255,255,0.02);background:rgba(0,0,0,0.35);padding:10px}
+.history-item{display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:8px;margin-bottom:8px;background:linear-gradient(90deg,rgba(255,255,255,0.01),transparent)}
+.small{font-size:13px;color:var(--muted)}
+.preview{white-space:pre-wrap;font-family:ui-monospace,Menlo,monospace;background:rgba(0,0,0,0.5);padding:10px;border-radius:8px;margin-top:8px;color:#dbeafe}
+.notif{position:fixed;right:18px;bottom:18px;padding:12px 16px;border-radius:10px;background:#001f14;color:var(--muted);box-shadow:0 8px 30px rgba(2,6,23,0.6);display:flex;gap:10px;align-items:center;transform:translateY(20px);opacity:0;transition:all .35s ease}
+.notif.show{opacity:1;transform:none}
+.entry-row{display:flex;gap:8px;align-items:center;justify-content:space-between}
+.tag-pill{padding:6px 8px;border-radius:8px;background:rgba(255,255,255,0.02);font-size:13px}
+footer{width:100%;text-align:center;color:var(--muted);font-size:13px;padding:18px 0;margin-top:18px}
+@media(max-width:920px){h1{font-size:32px} .controls{flex-direction:column;align-items:stretch}}
+.container-flex{display:flex;gap:12px;align-items:flex-start}
+.left{flex:1}
+.right{width:360px}
+</style>
+</head>
+<body>
+<header>
+  <h1>PANEL LEX HOST</h1>
+  <div class="sub">web panel whitelist server</div>
+  <div class="byline">LEX DIGITAL HOST</div>
+</header>
+
+<main class="card" style="width:95%;max-width:1200px;">
+  <div class="controls">
+    <div class="group"><label class="tag">Owner</label><input id="owner" type="text" value="putraborz"></div>
+    <div class="group"><label class="tag">Repo</label><input id="repo" type="text" value="VerifikasiScWata"></div>
+    <div class="group"><label class="tag">Path</label><input id="path" type="text" value="Loader/vip.txt"></div>
+
+    <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+      <input id="token" type="password" placeholder="GitHub token (required to save)" />
+      <button id="btnLoad">Load</button>
+      <button id="btnProcess" class="ghost">Process Expirations</button>
+      <button id="btnSave">Save</button>
+      <button id="btnHistory" class="ghost">View History</button>
+    </div>
+  </div>
+
+  <div class="container-flex">
+    <div class="left">
+      <div class="box">
+        <div style="display:flex;gap:10px;align-items:center;">
+          <input id="newEntry" type="text" placeholder="Add new whitelist entry (e.g. username or token)" style="flex:1"/>
+          <select id="ttlSelect" title="Time to live" style="width:180px;margin-left:8px">
+            <option value="1h">1 hour</option>
+            <option value="6h">6 hours</option>
+            <option value="12h">12 hours</option>
+            <option value="24h">24 hours</option>
+            <option value="48h">2 days</option>
+            <option value="72h">3 days</option>
+            <option value="7d">7 days</option>
+            <option value="14d">14 days</option>
+            <option value="30d">30 days</option>
+            <option value="perm">Permanent</option>
+            <option value="vip">VIP (permanent)</option>
+          </select>
+          <button id="btnAdd">Add</button>
+        </div>
+        <div class="small" style="margin-top:8px">When you add an entry it will be appended to <code>vip.txt</code> and recorded in <code>Loader/history.json</code> with the chosen TTL.</div>
+      </div>
+
+      <textarea id="editor" placeholder="Raw vip.txt content (for advanced editing)"></textarea>
+
+      <div class="row" style="margin-top:8px">
+        <div class="small">Current SHA: <span id="sha">-</span></div>
+        <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+          <button id="btnClear" class="ghost">Clear Editor</button>
+          <button id="btnPreview" class="ghost">Preview Entries</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="right">
+      <div class="box">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-weight:700">Whitelist Entries</div>
+          <div class="small">live view</div>
+        </div>
+        <div id="entriesList" class="history-list" style="margin-top:10px"></div>
+      </div>
+
+      <div style="height:12px"></div>
+
+      <div class="box" style="margin-top:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-weight:700">History / Logs</div>
+          <div class="small">saved to Loader/history.json</div>
+        </div>
+        <div id="historySummary" class="history-list" style="margin-top:10px;max-height:220px;overflow:auto"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="historyPanel" style="margin-top:14px;display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div class="small">History Panel</div>
+      <div style="display:flex;gap:8px">
+        <button id="btnRefreshHistory" class="ghost">Refresh</button>
+        <button id="btnCloseHistory" class="ghost">Close</button>
+      </div>
+    </div>
+    <div id="historyList" class="history-list"></div>
+    <div id="previewBox" class="preview" style="display:none"></div>
+  </div>
+
+</main>
+
+<div id="notif" class="notif">Notification</div>
+<footer>LEX DIGITAL HOST — PANEL LEX HOST</footer>
+
+<script>
+/* Utilities */
+const $ = id => document.getElementById(id);
+const ownerEl = $('owner'), repoEl = $('repo'), pathEl = $('path'), tokenEl = $('token');
+const editor = $('editor'), shaEl = $('sha'), entriesList = $('entriesList'), historySummary = $('historySummary');
+const btnLoad = $('btnLoad'), btnSave = $('btnSave'), btnAdd = $('btnAdd'), btnProcess = $('btnProcess'), btnHistory = $('btnHistory');
+const btnPreview = $('btnPreview'), btnClear = $('btnClear'), btnRefreshHistory = $('btnRefreshHistory'), btnCloseHistory = $('btnCloseHistory');
+const historyPanel = $('historyPanel'), historyList = $('historyList'), previewBox = $('previewBox'), notif = $('notif');
+const newEntryEl = $('newEntry'), ttlSelect = $('ttlSelect');
+
+function toast(msg, ok=true){ notif.textContent=msg; notif.style.background= ok? 'linear-gradient(90deg,#052e11,#083b21)' : 'linear-gradient(90deg,#3a0710,#5b0f18)'; notif.classList.add('show'); setTimeout(()=>notif.classList.remove('show'),3200); }
+
+function nowWIBPretty(){ return new Intl.DateTimeFormat('id-ID',{timeZone:'Asia/Jakarta',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(new Date()).replace(',',''); }
+function parseTTL(ttlVal){ if(!ttlVal||ttlVal==='perm'||ttlVal==='vip') return null; if(ttlVal.endsWith('h')) return Date.now() + parseInt(ttlVal) * 3600000; if(ttlVal.endsWith('d')) return Date.now() + parseInt(ttlVal) * 24 * 3600000; return null; }
+function ttlLabel(ttlVal){ if(ttlVal==='perm') return 'Permanent'; if(ttlVal==='vip') return 'VIP (Permanent)'; if(ttlVal.endsWith('h')) return ttlVal.replace('h',' hour(s)'); if(ttlVal.endsWith('d')) return ttlVal.replace('d',' day(s)'); return ttlVal; }
+function escapeHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function b64(s){ return btoa(unescape(encodeURIComponent(s))); }
+function unb64(s){ try{return decodeURIComponent(escape(atob(s)));}catch(e){return atob(s);} }
+
+/* GitHub helpers */
+async function ghGetContent(owner,repo,filepath,token){ const url=`https://api.github.com/repos/${owner}/${repo}/contents/${filepath}`; const headers={'Accept':'application/vnd.github.v3+json'}; if(token) headers['Authorization']='token '+token; const res=await fetch(url,{headers}); if(!res.ok) throw new Error('GET failed: '+res.status+' '+(await res.text())); return await res.json(); }
+async function ghPutContent(owner,repo,filepath,message,contentB64,sha,token){ const url=`https://api.github.com/repos/${owner}/${repo}/contents/${filepath}`; const body={message,content:contentB64}; if(sha) body.sha=sha; const res=await fetch(url,{method:'PUT',headers:{'Accept':'application/vnd.github.v3+json','Content-Type':'application/json','Authorization':'token '+token},body:JSON.stringify(body)}); const j=await res.json(); if(!res.ok) throw new Error(j.message||JSON.stringify(j)); return j; }
+
+/* Core */
+let currentHistory=[];
+let entriesCache=[];
+
+function historyPathFrom(p){ const parts=p.split('/'); parts.pop(); parts.push('history.json'); return parts.join('/'); }
+function getDefaults(){ return { owner: ownerEl.value.trim(), repo: repoEl.value.trim(), path: pathEl.value.trim() }; }
+
+async function loadFile(){
+  const {owner,repo,path}=getDefaults(); if(!owner||!repo||!path) return toast('owner/repo/path required',false);
+  try{
+    toast('Loading vip.txt...');
+    // try contents API (works with token too)
+    const j = await ghGetContent(owner,repo,path,null).catch(async err=>{
+      // fallback to raw (public)
+      const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/${path}`;
+      const r = await fetch(rawUrl); if(!r.ok) throw err; return { content: b64(await r.text()) };
+    });
+    const raw = j.content ? unb64(j.content.replace(/\n/g,'')) : '';
+    editor.value = raw;
+    shaEl.textContent = j.sha || '-';
+    // load history.json
+    const histPath=historyPathFrom(path);
+    try {
+      const token = tokenEl.value.trim() || null;
+      const hist = await ghGetContent(owner,repo,histPath,token);
+      const txt = hist.content ? unb64(hist.content.replace(/\n/g,'')) : '';
+      currentHistory = txt ? JSON.parse(txt) : [];
+      localStorage.setItem(`${owner}/${repo}/${histPath}`,JSON.stringify(currentHistory));
+      toast('History loaded from GitHub',true);
+    } catch(e){
+      const key=`${owner}/${repo}/${historyPathFrom(path)}`;
+      const local=localStorage.getItem(key);
+      if(local){ currentHistory=JSON.parse(local); toast('Loaded history from localStorage',true); } else { currentHistory=[]; toast('No history found',true); }
+    }
+    rebuildEntriesFromHistory(editor.value,currentHistory);
+    renderEntriesList();
+    renderHistorySummary();
+  } catch(e){ toast('Load error: '+e.message,false); }
+}
+
+function rebuildEntriesFromHistory(rawVipText,historyArr){
+  const lines = rawVipText.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  const metaMap={};
+  for(const h of historyArr){ if(h.entryValue){ if(!metaMap[h.entryValue]) metaMap[h.entryValue]=h; } }
+  const now=Date.now();
+  entriesCache = lines.map(v=>{
+    const meta = metaMap[v]||null;
+    const expiresAt = meta && meta.expiresAt ? meta.expiresAt : null;
+    const ttlVal = meta && meta.ttlVal ? meta.ttlVal : (meta && meta.note==='vip' ? 'vip' : 'perm');
+    return { value:v, addedAt: meta?meta.timestamp:null, expiresAt, ttlVal, note: meta?meta.note:'' };
+  }).filter(e=> !(e.expiresAt && e.expiresAt < now) );
+}
+
+function renderEntriesList(){
+  entriesList.innerHTML='';
+  if(entriesCache.length===0){ entriesList.innerHTML='<div class="small">No whitelist entries</div>'; return; }
+  entriesCache.forEach((ent,idx)=>{
+    const div=document.createElement('div'); div.className='history-item';
+    const left=document.createElement('div'); left.innerHTML=`<div style="font-weight:700">${escapeHtml(ent.value)}</div><div class="small">${ent.ttlVal==='vip'?'VIP':(ent.ttlVal==='perm'?'Permanent':'Expires: '+(ent.expiresAt?new Date(ent.expiresAt).toLocaleString('id-ID',{timeZone:'Asia/Jakarta'}):'-'))}</div>`;
+    const right=document.createElement('div'); right.style.display='flex'; right.style.gap='8px';
+    const btnDel=document.createElement('button'); btnDel.className='ghost'; btnDel.textContent='Delete';
+    const btnEdit=document.createElement('button'); btnEdit.className='ghost'; btnEdit.textContent='Edit';
+    btnDel.onclick=()=>{ if(confirm('Delete entry permanently?')){ entriesCache.splice(idx,1); writeEditorFromEntries(); renderEntriesList(); toast('Entry removed (not yet saved). Press Save to commit)', true); } };
+    btnEdit.onclick=()=>{ const v=prompt('Edit entry', ent.value); if(v!==null){ entriesCache[idx].value=v.trim(); writeEditorFromEntries(); renderEntriesList(); toast('Edited (not saved). Press Save to commit)', true); } };
+    right.appendChild(btnEdit); right.appendChild(btnDel);
+    div.appendChild(left); div.appendChild(right);
+    entriesList.appendChild(div);
+  });
+}
+
+function writeEditorFromEntries(){ editor.value = entriesCache.map(e=>e.value).join('\n'); }
+
+btnAdd.onclick = ()=>{
+  const v=newEntryEl.value.trim(); const ttl=ttlSelect.value;
+  if(!v) return toast('Enter an entry value', false);
+  const expiresAt = parseTTL(ttl);
+  entriesCache.unshift({ value:v, addedAt: nowWIBPretty(), expiresAt, ttlVal: ttl, note: ttl==='vip'?'vip':'' });
+  writeEditorFromEntries(); renderEntriesList(); newEntryEl.value=''; toast('Entry added (not yet saved). Click Save to commit to GitHub.', true);
+};
+
+async function processExpirations(autoCommit=false){
+  const now=Date.now(); const before=entriesCache.length;
+  entriesCache = entriesCache.filter(e=> !e.expiresAt || e.expiresAt > now);
+  const removed = before - entriesCache.length;
+  writeEditorFromEntries(); renderEntriesList(); toast(`Processed expirations: removed ${removed} expired entries`, true);
+  if(autoCommit){ await saveFile(); }
+}
+
+async function saveFile(){
+  const token = tokenEl.value.trim(); if(!token) return toast('Token required to save', false);
+  const {owner,repo,path} = getDefaults(); if(!owner||!repo||!path) return toast('owner/repo/path required', false);
+  try{
+    toast('Preparing save...');
+    const cur = await ghGetContent(owner,repo,path,token);
+    const curContent = cur.content ? unb64(cur.content.replace(/\n/g,'')) : '';
+    const curSha = cur.sha || null;
+    const historyPath = historyPathFrom(path);
+    let histArr=[]; let histSha=null;
+    try { const h = await ghGetContent(owner,repo,historyPath,token); const htxt = h.content ? unb64(h.content.replace(/\n/g,'')) : ''; histArr = htxt ? JSON.parse(htxt) : []; histSha = h.sha; } catch(e){ histArr = []; histSha = null; }
+    const timestamp = nowWIBPretty();
+    const snapshot = { id: Date.now(), timestamp, by:'web', note:'save', sha: curSha, contentSnapshot: curContent };
+    histArr.unshift(snapshot);
+    const oldLines = curContent.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+    const newLines = editor.value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+    const added = newLines.filter(x=> !oldLines.includes(x));
+    for(const a of added){
+      const meta = entriesCache.find(e=>e.value===a);
+      const entryRecord = { id: Date.now()+Math.floor(Math.random()*1000), timestamp, by:'web', note:'add', entryValue: a, ttlVal: meta?meta.ttlVal:'perm', expiresAt: meta && meta.expiresAt ? meta.expiresAt : null };
+      histArr.unshift(entryRecord);
+    }
+    const newHistoryB64 = b64(JSON.stringify(histArr, null, 2));
+    await ghPutContent(owner,repo,historyPath,`Update history — ${timestamp} (WIB)`,newHistoryB64,histSha,token);
+    const newVipB64 = b64(editor.value);
+    const putResp = await ghPutContent(owner,repo,path,`Update vip.txt — ${timestamp} (WIB)`, newVipB64, curSha, token);
+    shaEl.textContent = (putResp.content && putResp.content.sha) ? putResp.content.sha : '-';
+    localStorage.setItem(`${owner}/${repo}/${historyPath}`, JSON.stringify(histArr));
+    currentHistory = histArr;
+    rebuildEntriesFromHistory(editor.value,currentHistory);
+    renderEntriesList(); renderHistorySummary();
+    toast('Saved and history updated ✅', true);
+  } catch(e){ toast('Save error: '+e.message, false); }
+}
+
+function renderHistorySummary(){ historySummary.innerHTML=''; if(!currentHistory||currentHistory.length===0){ historySummary.innerHTML='<div class="small">No logs yet</div>'; return; } const list=currentHistory.slice(0,10); list.forEach(h=>{ const d=document.createElement('div'); d.className='history-item'; d.innerHTML=`<div style="font-weight:700">${h.timestamp||'-'}</div><div class="small">${h.note||''} • by ${h.by||'-'}</div>`; historySummary.appendChild(d); }); }
+
+async function openHistoryPanel(){
+  historyPanel.style.display='block'; historyList.innerHTML='<div class="small">Loading...</div>';
+  const {owner,repo,path} = getDefaults(); const historyPath = historyPathFrom(path);
+  try{
+    const token = tokenEl.value.trim() || null;
+    const h = await ghGetContent(owner,repo,historyPath,token);
+    const txt = h.content ? unb64(h.content.replace(/\n/g,'')) : '';
+    const arr = txt ? JSON.parse(txt) : []; currentHistory = arr; historyList.innerHTML='';
+    if(arr.length===0){ historyList.innerHTML='<div class="small">No history entries</div>'; return; }
+    arr.forEach((entry,idx)=>{ const w=document.createElement('div'); w.className='history-item'; const left=document.createElement('div'); left.innerHTML=`<div style="font-weight:700">${entry.timestamp||'-'}</div><div class="small">${entry.note||''} • sha:${entry.sha||'-'}</div>`; const right=document.createElement('div'); right.style.display='flex'; right.style.gap='8px'; const btnView=document.createElement('button'); btnView.className='ghost'; btnView.textContent='View'; const btnRestore=document.createElement('button'); btnRestore.className='ghost'; btnRestore.textContent='Restore'; btnView.onclick=()=>{ previewBox.style.display='block'; previewBox.textContent = (entry.contentSnapshot||entry.entryValue||'(no snapshot)'); toast('Preview loaded', true); }; btnRestore.onclick=()=>{ if(confirm('Restore contentSnapshot into editor? You must Save to commit changes.')){ editor.value = entry.contentSnapshot || entry.entryValue || ''; toast('Restored into editor (not yet committed). Press Save to commit.', true); } }; right.appendChild(btnView); right.appendChild(btnRestore); w.appendChild(left); w.appendChild(right); historyList.appendChild(w); });
+  } catch(e){
+    const key = `${owner}/${repo}/${historyPath}`; const local = localStorage.getItem(key);
+    if(local){ const arr=JSON.parse(local); currentHistory=arr; historyList.innerHTML=''; arr.forEach((entry,idx)=>{ const w=document.createElement('div'); w.className='history-item'; const left=document.createElement('div'); left.innerHTML=`<div style="font-weight:700">${entry.timestamp||'-'}</div><div class="small">${entry.note||''}</div>`; const right=document.createElement('div'); right.style.display='flex'; right.style.gap='8px'; const btnView=document.createElement('button'); btnView.className='ghost'; btnView.textContent='View'; const btnRestore=document.createElement('button'); btnRestore.className='ghost'; btnRestore.textContent='Restore'; btnView.onclick=()=>{ previewBox.style.display='block'; previewBox.textContent = (entry.contentSnapshot||entry.entryValue||'(no snapshot)'); toast('Preview loaded', true); }; btnRestore.onclick=()=>{ if(confirm('Restore contentSnapshot into editor?')){ editor.value = entry.contentSnapshot || entry.entryValue || ''; toast('Restored into editor (not yet committed). Press Save to commit.', true); } }; right.appendChild(btnView); right.appendChild(btnRestore); w.appendChild(left); w.appendChild(right); historyList.appendChild(w); }); toast('Loaded history from localStorage', true); } else { historyList.innerHTML='<div class="small">No history found</div>'; toast('No history found', false); }
+  }
+}
+
+/* Attach events */
+btnLoad.onclick = async ()=>{ await loadFile(); };
+btnProcess.onclick = async ()=>{ await processExpirations(true); };
+btnSave.onclick = saveFile;
+btnHistory.onclick = openHistoryPanel;
+btnRefreshHistory.onclick = openHistoryPanel;
+btnCloseHistory.onclick = ()=>{ historyPanel.style.display='none'; previewBox.style.display='none'; };
+btnPreview.onclick = ()=>{ previewBox.style.display='block'; previewBox.textContent = editor.value || '(empty)'; toast('Preview ready', true); };
+btnClear.onclick = ()=>{ if(confirm('Clear editor?')){ editor.value=''; previewBox.style.display='none'; toast('Editor cleared', true); } };
+
+/* Init */
+(async ()=>{ try{ await loadFile(); }catch(e){ console.log('init load err',e); } })();
+
+</script>
+</body>
+</html>
