@@ -1,236 +1,187 @@
 <!doctype html>
 <html lang="id">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>PANEL LEX HOST — Whitelist Web Panel</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700;800&display=swap" rel="stylesheet">
 <style>
-:root{
-  --bg1:#060612; --card:rgba(255,255,255,0.03); --muted:#9fb3c9; --accent1:#06b6d4; --accent2:#8b5cf6;
-  --success:#22c55e; --danger:#ef4444;
+body{
+  background:linear-gradient(120deg,#020617,#07102a 40%,#0b1220 100%);
+  color:#e6eef8;font-family:Poppins,sans-serif;margin:0;padding:0;
+  display:flex;flex-direction:column;align-items:center
 }
-*{box-sizing:border-box}
-body{margin:0;font-family:Poppins,Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:linear-gradient(120deg,#020617,#07102a 40%,#0b1220 100%);color:#e6eef8;min-height:100vh;display:flex;flex-direction:column;align-items:center}
-header{padding:36px 16px 8px;text-align:center}
-h1{font-size:44px;margin:0;font-weight:800;letter-spacing:6px;animation:rgbText 6s linear infinite}
-@keyframes rgbText{0%{color:#ff3b3b}25%{color:#ffdd57}50%{color:#3bffb0}75%{color:#7aa2ff}100%{color:#ff3b3b}}
-.sub{color:var(--muted);margin-top:8px}
-.byline{color:var(--muted);font-size:13px;margin-top:4px}
-main{width:100%;max-width:1200px;padding:20px}
-.card{background:var(--card);border-radius:14px;padding:18px;box-shadow:0 10px 30px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.02)}
-.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
-.group{display:flex;gap:8px;align-items:center}
-label.tag{font-size:12px;color:var(--muted);padding:6px 8px;border-radius:8px;background:rgba(0,0,0,0.25)}
-input[type=text], input[type=password], select{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.04);padding:10px;border-radius:10px;color:inherit;min-width:160px}
-button{background:linear-gradient(90deg,var(--accent1),var(--accent2));border:none;padding:10px 14px;border-radius:10px;color:#001;font-weight:700;cursor:pointer}
-button.ghost{background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.04)}
-textarea{width:100%;min-height:220px;border-radius:12px;padding:14px;font-family:ui-monospace,Menlo,monospace;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));color:#e6eef8;border:1px solid rgba(255,255,255,0.03);resize:vertical;outline:none;display:block}
-.row{display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap}
-.box{background:rgba(0,0,0,0.35);padding:12px;border-radius:10px}
-.history-list{margin-top:12px;max-height:260px;overflow:auto;border-radius:10px;border:1px solid rgba(255,255,255,0.02);background:rgba(0,0,0,0.35);padding:10px}
-.history-item{display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:8px;margin-bottom:8px;background:linear-gradient(90deg,rgba(255,255,255,0.01),transparent)}
-.small{font-size:13px;color:var(--muted)}
-.preview{white-space:pre-wrap;font-family:ui-monospace,Menlo,monospace;background:rgba(0,0,0,0.5);padding:10px;border-radius:8px;margin-top:8px;color:#dbeafe}
-.notif{position:fixed;right:18px;bottom:18px;padding:12px 16px;border-radius:10px;background:#001f14;color:var(--muted);box-shadow:0 8px 30px rgba(2,6,23,0.6);display:flex;gap:10px;align-items:center;transform:translateY(20px);opacity:0;transition:all .35s ease}
-.notif.show{opacity:1;transform:none}
-.entry-row{display:flex;gap:8px;align-items:center;justify-content:space-between}
-.tag-pill{padding:6px 8px;border-radius:8px;background:rgba(255,255,255,0.02);font-size:13px}
-footer{width:100%;text-align:center;color:var(--muted);font-size:13px;padding:18px 0;margin-top:18px}
-@media(max-width:920px){h1{font-size:32px} .controls{flex-direction:column;align-items:stretch}}
-.container-flex{display:flex;gap:12px;align-items:flex-start}
-.left{flex:1}
-.right{width:360px}
+header{padding:30px;text-align:center}
+h1{
+  font-size:40px;font-weight:800;letter-spacing:4px;
+  animation:rgbText 6s linear infinite
+}
+@keyframes rgbText{
+0%{color:#ff3b3b}25%{color:#ffdd57}50%{color:#3bffb0}75%{color:#7aa2ff}100%{color:#ff3b3b}
+}
+.controls{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;transition:all .3s}
+input,select,button{padding:8px;border-radius:6px;border:none;font-size:14px;transition:all .3s}
+button{cursor:pointer;background:linear-gradient(90deg,#06b6d4,#8b5cf6);color:#001;font-weight:700}
+button:hover{transform:scale(1.05)}
+textarea{
+  width:100%;height:200px;background:rgba(255,255,255,0.03);color:#e6eef8;
+  padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);resize:vertical;outline:none;
+  transition:all .3s
+}
+.history-list{
+  max-height:250px;overflow:auto;background:rgba(0,0,0,0.35);
+  padding:10px;border-radius:8px;width:100%;transition:all .3s
+}
+.history-item{
+  display:flex;justify-content:space-between;align-items:center;padding:6px;margin-bottom:6px;
+  background:linear-gradient(90deg,rgba(255,255,255,0.01),transparent);
+  border-radius:6px;transition:all .5s;opacity:0;
+}
+.history-item.show{opacity:1;}
+.rainbow-text{animation:rainbow 4s linear infinite}
+@keyframes rainbow{
+0%{color:#ff3b3b}16%{color:#ffdd57}32%{color:#3bffb0}48%{color:#7aa2ff}64%{color:#ff3b3b}80%{color:#ffdd57}100%{color:#3bffb0}
+}
+.avatar{width:24px;height:24px;border-radius:50%;margin-right:6px;}
+.entry-left{display:flex;align-items:center;gap:6px;}
+#notif{
+  position:fixed;bottom:10px;right:10px;padding:10px;
+  background:linear-gradient(90deg,#052e11,#083b21);border-radius:6px;display:none;color:#fff;
+  transition:all .3s
+}
 </style>
 </head>
 <body>
 <header>
-  <h1>PANEL LEX HOST</h1>
-  <div class="sub">web panel whitelist server</div>
-  <div class="byline">LEX DIGITAL HOST</div>
+<h1 class="rainbow-text">PANEL LEX HOST</h1>
 </header>
 
-<main class="card" style="width:95%;max-width:1200px;">
-  <div class="controls">
-    <div class="group"><label class="tag">Owner</label><input id="owner" type="text" value="putraborz"></div>
-    <div class="group"><label class="tag">Repo</label><input id="repo" type="text" value="VerifikasiScWata"></div>
-    <div class="group"><label class="tag">Path</label><input id="path" type="text" value="Loader/vip.txt"></div>
+<div class="controls">
+<input id="owner" type="text" placeholder="Owner" value="putraborz">
+<input id="repo" type="text" placeholder="Repo" value="VerifikasiScWata">
+<input id="path" type="text" placeholder="Path" value="Loader/vip.txt">
+<input id="token" type="password" placeholder="GitHub Token">
+<button id="btnLoad">Load File</button>
+<button id="btnSave">Save to GitHub</button>
+</div>
 
-    <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
-      <input id="token" type="password" placeholder="GitHub token (required to save)" />
-      <button id="btnLoad">Load</button>
-      <button id="btnProcess" class="ghost">Process Expirations</button>
-      <button id="btnSave">Save</button>
-      <button id="btnHistory" class="ghost">View History</button>
-    </div>
-  </div>
+<div class="controls">
+<input id="newEntry" type="text" placeholder="Add new entry">
+<select id="ttlSelect">
+<option value="2m">2 minutes</option>
+<option value="5m">5 minutes</option>
+<option value="1h">1 hour</option>
+<option value="6h">6 hours</option>
+<option value="12h">12 hours</option>
+<option value="1d">1 day</option>
+<option value="2d">2 days</option>
+<option value="3d">3 days</option>
+<option value="7d">7 days</option>
+<option value="14d">14 days</option>
+<option value="30d">30 days</option>
+<option value="perm">Permanent</option>
+<option value="vip">VIP</option>
+</select>
+<button id="btnAdd">Add Entry</button>
+</div>
 
-  <div class="container-flex">
-    <div class="left">
-      <div class="box">
-        <div style="display:flex;gap:10px;align-items:center;">
-          <input id="newEntry" type="text" placeholder="Add new whitelist entry (e.g. username or token)" style="flex:1"/>
-          <select id="ttlSelect" title="Time to live" style="width:180px;margin-left:8px">
-            <option value="2m">2 minutes</option>
-            <option value="5m">5 minutes</option>
-            <option value="1h">1 hour</option>
-            <option value="6h">6 hours</option>
-            <option value="12h">12 hours</option>
-            <option value="24h">24 hours</option>
-            <option value="48h">2 days</option>
-            <option value="72h">3 days</option>
-            <option value="7d">7 days</option>
-            <option value="14d">14 days</option>
-            <option value="30d">30 days</option>
-            <option value="perm">Permanent</option>
-            <option value="vip">VIP (permanent)</option>
-          </select>
-          <button id="btnAdd">Add</button>
-        </div>
-        <div class="small" style="margin-top:8px">When you add an entry it will be appended to <code>vip.txt</code> and recorded in <code>Loader/history.json</code> with the chosen TTL.</div>
-      </div>
+<textarea id="editor" placeholder="Raw vip.txt content"></textarea>
 
-      <textarea id="editor" placeholder="Raw vip.txt content (for advanced editing)"></textarea>
+<div class="history-list" id="entriesList"></div>
 
-      <div class="row" style="margin-top:8px">
-        <div class="small">Current SHA: <span id="sha">-</span></div>
-        <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
-          <button id="btnClear" class="ghost">Clear Editor</button>
-          <button id="btnPreview" class="ghost">Preview Entries</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="right">
-      <div class="box">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div style="font-weight:700">Whitelist Entries</div>
-          <div class="small">live view</div>
-        </div>
-        <div id="entriesList" class="history-list" style="margin-top:10px"></div>
-      </div>
-
-      <div style="height:12px"></div>
-
-      <div class="box" style="margin-top:10px">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div style="font-weight:700">History / Logs</div>
-          <div class="small">saved to Loader/history.json</div>
-        </div>
-        <div id="historySummary" class="history-list" style="margin-top:10px;max-height:220px;overflow:auto"></div>
-      </div>
-    </div>
-  </div>
-
-  <div id="historyPanel" style="margin-top:14px;display:none">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <div class="small">History Panel</div>
-      <div style="display:flex;gap:8px">
-        <button id="btnRefreshHistory" class="ghost">Refresh</button>
-        <button id="btnCloseHistory" class="ghost">Close</button>
-      </div>
-    </div>
-    <div id="historyList" class="history-list"></div>
-    <div id="previewBox" class="preview" style="display:none"></div>
-  </div>
-
-</main>
-
-<div id="notif" class="notif">Notification</div>
-<footer>LEX DIGITAL HOST — PANEL LEX HOST</footer>
+<div id="notif"></div>
 
 <script>
-/* Utilities */
+// Utils
 const $ = id => document.getElementById(id);
-const ownerEl = $('owner'), repoEl = $('repo'), pathEl = $('path'), tokenEl = $('token');
-const editor = $('editor'), shaEl = $('sha'), entriesList = $('entriesList'), historySummary = $('historySummary');
-const btnLoad = $('btnLoad'), btnSave = $('btnSave'), btnAdd = $('btnAdd'), btnProcess = $('btnProcess'), btnHistory = $('btnHistory');
-const btnPreview = $('btnPreview'), btnClear = $('btnClear'), btnRefreshHistory = $('btnRefreshHistory'), btnCloseHistory = $('btnCloseHistory');
-const historyPanel = $('historyPanel'), historyList = $('historyList'), previewBox = $('previewBox'), notif = $('notif');
-const newEntryEl = $('newEntry'), ttlSelect = $('ttlSelect');
+const ownerEl=$('owner'), repoEl=$('repo'), pathEl=$('path'), tokenEl=$('token'), editor=$('editor'), entriesList=$('entriesList');
+const btnLoad=$('btnLoad'), btnAdd=$('btnAdd'), btnSave=$('btnSave'), newEntry=$('newEntry'), ttlSelect=$('ttlSelect'), notif=$('notif');
 
-function toast(msg, ok=true){ notif.textContent=msg; notif.style.background= ok? 'linear-gradient(90deg,#052e11,#083b21)' : 'linear-gradient(90deg,#3a0710,#5b0f18)'; notif.classList.add('show'); setTimeout(()=>notif.classList.remove('show'),3200); }
-function nowWIBPretty(){ return new Intl.DateTimeFormat('id-ID',{timeZone:'Asia/Jakarta',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(new Date()).replace(',',''); }
-function parseTTL(ttlVal){
-  if(!ttlVal||ttlVal==='perm'||ttlVal==='vip') return null;
-  if(ttlVal.endsWith('m')) return Date.now() + parseInt(ttlVal) * 60000;
-  if(ttlVal.endsWith('h')) return Date.now() + parseInt(ttlVal) * 3600000;
-  if(ttlVal.endsWith('d')) return Date.now() + parseInt(ttlVal) * 24 * 3600000;
-  return null;
-}
-function ttlLabel(ttlVal){
-  if(ttlVal==='perm') return 'Permanent';
-  if(ttlVal==='vip') return 'VIP (Permanent)';
-  if(ttlVal.endsWith('m')) return ttlVal.replace('m',' minute(s)');
-  if(ttlVal.endsWith('h')) return ttlVal.replace('h',' hour(s)');
-  if(ttlVal.endsWith('d')) return ttlVal.replace('d',' day(s)');
-  return ttlVal;
-}
+function toast(msg){ notif.textContent=msg; notif.style.display='block'; setTimeout(()=>notif.style.display='none',3000); }
+function parseTTL(ttl){ if(ttl==='perm'||ttl==='vip') return null; if(ttl.endsWith('m')) return Date.now()+parseInt(ttl)*60000; if(ttl.endsWith('h')) return Date.now()+parseInt(ttl)*3600000; if(ttl.endsWith('d')) return Date.now()+parseInt(ttl)*24*3600000; return null; }
+function ttlLabel(ttl){ if(ttl==='perm') return 'Permanent'; if(ttl==='vip') return 'VIP'; if(ttl.endsWith('m')) return ttl.replace('m',' minute(s)'); if(ttl.endsWith('h')) return ttl.replace('h',' hour(s)'); if(ttl.endsWith('d')) return ttl.replace('d',' day(s)'); return ttl; }
 
-/* GitHub helpers */
-async function ghGetContent(owner,repo,filepath,token){ const url=`https://api.github.com/repos/${owner}/${repo}/contents/${filepath}`; const headers={'Accept':'application/vnd.github.v3+json'}; if(token) headers['Authorization']='token '+token; const res=await fetch(url,{headers}); if(!res.ok) throw new Error('GET failed: '+res.status+' '+(await res.text())); return await res.json(); }
-async function ghPutContent(owner,repo,filepath,message,contentB64,sha,token){ const url=`https://api.github.com/repos/${owner}/${repo}/contents/${filepath}`; const body={message,content:contentB64}; if(sha) body.sha=sha; const res=await fetch(url,{method:'PUT',headers:{'Accept':'application/vnd.github.v3+json','Content-Type':'application/json','Authorization':'token '+token},body:JSON.stringify(body)}); const j=await res.json(); if(!res.ok) throw new Error(j.message||JSON.stringify(j)); return j; }
-
-/* Core */
+// Core
 let entriesCache=[];
-let currentHistory=[];
 
-function writeEditorFromEntries(){ editor.value = entriesCache.map(e=>e.value).join('\n'); }
-function renderEntriesList(){
+// Render entries with avatar + fade-in
+function renderEntries(){
   entriesList.innerHTML='';
   if(entriesCache.length===0){ entriesList.innerHTML='<div class="small">No whitelist entries</div>'; return; }
-  entriesCache.forEach((ent,idx)=>{
+  entriesCache.forEach(e=>{
     const div=document.createElement('div'); div.className='history-item';
-    const left=document.createElement('div'); left.innerHTML=`<div style="font-weight:700">${ent.value}</div><div class="small">${ttlLabel(ent.ttlVal)}${ent.expiresAt?' • Expires: '+new Date(ent.expiresAt).toLocaleString('id-ID') : ''}</div>`;
-    const right=document.createElement('div'); right.style.display='flex'; right.style.gap='8px';
-    const btnDel=document.createElement('button'); btnDel.className='ghost'; btnDel.textContent='Delete';
-    const btnEdit=document.createElement('button'); btnEdit.className='ghost'; btnEdit.textContent='Edit';
-    btnDel.onclick=()=>{ if(confirm('Delete entry permanently?')){ entriesCache.splice(idx,1); writeEditorFromEntries(); renderEntriesList(); toast('Entry removed (not yet saved). Press Save to commit)'); } };
-    btnEdit.onclick=()=>{ const v=prompt('Edit entry', ent.value); if(v!==null){ entriesCache[idx].value=v.trim(); writeEditorFromEntries(); renderEntriesList(); toast('Edited (not saved). Press Save to commit)'); } };
-    right.appendChild(btnEdit); right.appendChild(btnDel);
-    div.appendChild(left); div.appendChild(right);
+    setTimeout(()=>div.classList.add('show'),50); // fade-in
+    const avatarUrl = `https://github.com/${e.value}.png?size=24`;
+    div.innerHTML=`<div class="entry-left"><img src="${avatarUrl}" class="avatar" onerror="this.src='https://via.placeholder.com/24'"><div><b>${e.value}</b><br><span class="rainbow-text">${ttlLabel(e.ttlVal)}${e.expiresAt?' • Expires: '+new Date(e.expiresAt).toLocaleTimeString() : ''}</span></div></div>`;
     entriesList.appendChild(div);
   });
 }
 
-// ===== Auto-expire loop =====
-function autoExpireLoop() {
-  const now = Date.now();
-  let expiredCount = 0;
-  entriesCache = entriesCache.filter(e => {
-    if(e.expiresAt && e.expiresAt <= now){
-      expiredCount++;
-      return false;
-    }
-    return true;
-  });
-  if(expiredCount > 0){
-    writeEditorFromEntries();
-    renderEntriesList();
-    toast(`${expiredCount} expired entr${expiredCount>1?'ies':'y'} removed automatically`);
-  }
-  setTimeout(autoExpireLoop, 10000);
+// Load vip.txt and history.json
+async function loadFile(){
+  const owner=ownerEl.value.trim(), repo=repoEl.value.trim(), path=pathEl.value.trim();
+  if(!owner||!repo||!path) return toast('Owner/Repo/Path required');
+  try{
+    toast('Loading vip.txt...');
+    const r=await fetch(`https://raw.githubusercontent.com/${owner}/${repo}/main/${path}`);
+    if(!r.ok) throw new Error('Failed to load file: '+r.status);
+    const raw=await r.text();
+    editor.value=raw;
+    const lines=raw.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+    const histPath=path.split('/').slice(0,-1).concat(['history.json']).join('/');
+    let history=[];
+    try{
+      const rh=await fetch(`https://raw.githubusercontent.com/${owner}/${repo}/main/${histPath}`);
+      if(rh.ok){ const txt=await rh.text(); history=JSON.parse(txt);}
+    }catch(e){}
+    entriesCache=lines.map(v=>{ const meta=history.find(h=>h.entryValue===v); return {value:v, ttlVal: meta?.ttlVal||'perm', expiresAt: meta?.expiresAt||null};});
+    renderEntries();
+    toast('File loaded ✅');
+  }catch(e){ toast(e.message); }
 }
 
-// UI events
+// Add entry
 btnAdd.onclick=()=>{
-  const val=newEntryEl.value.trim(); if(!val) return toast('Entry cannot be empty',false);
-  const ttlVal=ttlSelect.value; const expiresAt=parseTTL(ttlVal);
-  const timestamp=Date.now();
-  entriesCache.push({value:val,ttlVal,expiresAt,addedAt:timestamp});
-  currentHistory.push({entryValue:val,ttlVal,expiresAt,timestamp,note:'manual'});
-  writeEditorFromEntries(); renderEntriesList(); newEntryEl.value=''; toast('Entry added',true);
+  const val=newEntry.value.trim(); if(!val) return toast('Entry empty');
+  const ttl=ttlSelect.value; const exp=parseTTL(ttl);
+  entriesCache.push({value:val,ttlVal:ttl,expiresAt:exp});
+  editor.value=entriesCache.map(e=>e.value).join('\n');
+  renderEntries(); newEntry.value='';
+  toast('Entry added ✅');
 };
 
-btnClear.onclick=()=>{ editor.value=''; toast('Editor cleared',true); };
-btnPreview.onclick=()=>{ previewBox.style.display='block'; previewBox.textContent = entriesCache.map(e=>`${e.value} [${ttlLabel(e.ttlVal)}]`).join('\n'); };
-btnHistory.onclick=()=>{ historyPanel.style.display='block'; historyList.innerHTML=currentHistory.map(e=>`${new Date(e.addedAt).toLocaleString()} • ${e.entryValue} • ${ttlLabel(e.ttlVal)}`).join('<br>'); };
-btnCloseHistory.onclick=()=>{ historyPanel.style.display='none'; };
-btnRefreshHistory.onclick=()=>{ historyList.innerHTML=currentHistory.map(e=>`${new Date(e.addedAt).toLocaleString()} • ${e.entryValue} • ${ttlLabel(e.ttlVal)}`).join('<br>'); };
+// Auto-expire loop
+function autoExpireLoop(){
+  const now=Date.now(), before=entriesCache.length;
+  entriesCache=entriesCache.filter(e=>!e.expiresAt || e.expiresAt>now);
+  if(entriesCache.length<before){ editor.value=entriesCache.map(e=>e.value).join('\n'); renderEntries(); }
+  setTimeout(autoExpireLoop,1000);
+}
 
-// Start auto-expire loop
+// Save to GitHub
+async function saveFile(){
+  const owner=ownerEl.value.trim(), repo=repoEl.value.trim(), path=pathEl.value.trim(), token=tokenEl.value.trim();
+  if(!owner||!repo||!path||!token) return toast('Owner/Repo/Path/Token required');
+  try{
+    toast('Saving...');
+    const curResp=await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {headers:{'Authorization':'token '+token}});
+    const cur=await curResp.json();
+    const sha=cur.sha;
+    const contentB64=btoa(unescape(encodeURIComponent(editor.value)));
+    const putResp=await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`,{
+      method:'PUT',
+      headers:{'Authorization':'token '+token,'Content-Type':'application/json'},
+      body:JSON.stringify({message:'Update vip.txt',content:contentB64,sha})
+    });
+    if(!putResp.ok) throw new Error('Failed to save: '+putResp.status);
+    toast('Saved to GitHub ✅');
+  }catch(e){ toast(e.message); }
+}
+
+// Init
+btnLoad.onclick=loadFile;
+btnSave.onclick=saveFile;
 autoExpireLoop();
-
 </script>
 </body>
 </html>
