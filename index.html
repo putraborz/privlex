@@ -18,12 +18,12 @@ textarea{width:100%;height:200px;background:rgba(255,255,255,0.03);color:#e6eef8
 .history-list{max-height:250px;overflow:auto;background:rgba(0,0,0,0.35);padding:10px;border-radius:8px;width:100%;transition:all .3s;}
 .history-item{display:flex;justify-content:space-between;align-items:center;padding:6px;margin-bottom:6px;background:linear-gradient(90deg,rgba(255,255,255,0.01),transparent);border-radius:6px;transition:all .5s;opacity:0;}
 .history-item.show{opacity:1;}
-.history-item.fade-out{opacity:0;transition:all .5s;}
 .rainbow-text{animation:rainbow 4s linear infinite}
 @keyframes rainbow{0%{color:#ff3b3b}16%{color:#ffdd57}32%{color:#3bffb0}48%{color:#7aa2ff}64%{color:#ff3b3b}80%{color:#ffdd57}100%{color:#3bffb0}}
 .avatar{width:24px;height:24px;border-radius:50%;margin-right:6px;}
 .entry-left{display:flex;align-items:center;gap:6px;}
 #notif{position:fixed;bottom:10px;right:10px;padding:10px;background:linear-gradient(90deg,#052e11,#083b21);border-radius:6px;display:none;color:#fff;transition:all .3s;}
+#statusPanel{margin-bottom:10px;font-size:14px;color:#fff;}
 </style>
 </head>
 <body>
@@ -60,13 +60,14 @@ textarea{width:100%;height:200px;background:rgba(255,255,255,0.03);color:#e6eef8
 <button id="btnAdd">Add Entry</button>
 </div>
 
+<div id="statusPanel">Loading auto-remove status...</div>
 <textarea id="editor" placeholder="Raw vip.txt content"></textarea>
 <div class="history-list" id="entriesList"></div>
 <div id="notif"></div>
 
 <script>
 const $ = id => document.getElementById(id);
-const ownerEl=$('owner'), repoEl=$('repo'), pathEl=$('path'), tokenEl=$('token'), editor=$('editor'), entriesList=$('entriesList');
+const ownerEl=$('owner'), repoEl=$('repo'), pathEl=$('path'), tokenEl=$('token'), editor=$('editor'), entriesList=$('entriesList'), statusPanel=$('statusPanel');
 const btnLoad=$('btnLoad'), btnAdd=$('btnAdd'), btnSave=$('btnSave'), newEntry=$('newEntry'), ttlSelect=$('ttlSelect'), notif=$('notif');
 
 function toast(msg){ notif.textContent=msg; notif.style.display='block'; setTimeout(()=>notif.style.display='none',3000); }
@@ -80,22 +81,25 @@ function renderEntries(){
   entriesList.innerHTML='';
   if(entriesCache.length===0){ entriesList.innerHTML='<div class="small">No whitelist entries</div>'; return; }
   const now = Date.now();
-  entriesCache.forEach((e,i)=>{
+  entriesCache.forEach(e=>{
     const div=document.createElement('div'); div.className='history-item';
     setTimeout(()=>div.classList.add('show'),50);
     const avatarUrl=`https://github.com/${e.value}.png?size=24`;
     let expireText = '';
-    if(e.expiresAt){ expireText = ' • Expires in ' + msToTime(e.expiresAt-now); }
+    if(e.expiresAt && !isNaN(e.expiresAt)){ 
+      const remaining = Math.max(0, e.expiresAt - now);
+      expireText = ' • Expires in ' + msToTime(remaining);
+    }
     div.innerHTML=`<div class="entry-left">
       <img src="${avatarUrl}" class="avatar" onerror="this.src='https://via.placeholder.com/24'">
       <div><b>${e.value}</b><br><span class="rainbow-text">${ttlLabel(e.ttlVal)}${expireText}</span></div>
     </div>`;
     entriesList.appendChild(div);
-    if(e.expiresAt){
+
+    if(e.expiresAt && !isNaN(e.expiresAt)){
       const interval = setInterval(()=>{
-        const remaining = e.expiresAt-Date.now();
-        if(remaining<=0){ clearInterval(interval); return; }
-        div.querySelector('.rainbow-text').textContent=ttlLabel(e.ttlVal)+' • Expires in '+msToTime(remaining);
+        const remaining = Math.max(0, e.expiresAt - Date.now());
+        div.querySelector('.rainbow-text').textContent = ttlLabel(e.ttlVal) + ' • Expires in ' + msToTime(remaining);
       },1000);
     }
   });
@@ -110,18 +114,29 @@ async function loadFile(){
     if(!r.ok) throw new Error('Failed to load file: '+r.status);
     const raw=await r.text();
     editor.value=raw;
-    const lines=raw.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
-    entriesCache=lines.map(v=>({value:v,ttlVal:'perm',expiresAt:null}));
+    entriesCache=raw.split(/\r?\n/).map(l=>{
+      if(!l.trim()) return null;
+      const [value, exp] = l.split('|');
+      let expiresAt = null;
+      if(exp && !['perm','vip'].includes(exp)) expiresAt = parseInt(exp);
+      return {value, ttlVal: exp || 'perm', expiresAt};
+    }).filter(Boolean);
     renderEntries();
     toast('File loaded ✅');
   }catch(e){ toast(e.message); }
 }
 
-btnAdd.onclick=()=>{
-  const val=newEntry.value.trim(); if(!val) return toast('Entry empty');
-  const ttl=ttlSelect.value; const exp=parseTTL(ttl);
-  entriesCache.push({value:val,ttlVal:ttl,expiresAt:exp});
-  editor.value=entriesCache.map(e=>e.value).join('\n');
+btnAdd.onclick = () => {
+  const val = newEntry.value.trim(); if(!val) return toast('Entry empty');
+  const ttl = ttlSelect.value;
+  const exp = parseTTL(ttl);
+  entriesCache.push({value: val, ttlVal: ttl, expiresAt: exp});
+
+  editor.value = entriesCache.map(e=>{
+    if(e.ttlVal==='perm'||e.ttlVal==='vip') return `${e.value}|${e.ttlVal}`;
+    return `${e.value}|${e.expiresAt}`;
+  }).join('\n');
+
   renderEntries(); newEntry.value=''; toast('Entry added ✅');
 };
 
@@ -144,35 +159,36 @@ async function saveFile(){
   }catch(e){ toast(e.message); }
 }
 
-async function autoExpireLoop(){
-  const now = Date.now(); let changed=false;
-  entriesCache=entriesCache.filter(e=>{
-    if(e.expiresAt && e.expiresAt<=now){ changed=true; return false; }
-    return true;
-  });
-  if(changed){
-    editor.value=entriesCache.map(e=>e.value).join('\n'); renderEntries(); toast('Expired entries removed ✅');
-    const owner=ownerEl.value.trim(), repo=repoEl.value.trim(), path=pathEl.value.trim(), token=tokenEl.value.trim();
-    if(owner && repo && path && token){
-      try{
-        const curResp = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {headers:{'Authorization':'token '+token}});
-        const cur = await curResp.json();
-        const sha = cur.sha;
-        const contentB64 = btoa(unescape(encodeURIComponent(editor.value)));
-        await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`,{
-          method:'PUT',
-          headers:{'Authorization':'token '+token,'Content-Type':'application/json'},
-          body:JSON.stringify({message:'Auto-remove expired entries',content:contentB64,sha})
-        });
-        toast('Expired entries removed from GitHub ✅');
-      }catch(e){ console.error(e); toast('Failed GitHub update: '+e.message);}
+// Status auto-remove
+async function updateAutoRemoveStatus() {
+  const owner = ownerEl.value.trim();
+  const repo = repoEl.value.trim();
+  const path = pathEl.value.trim();
+  if (!owner || !repo || !path) return;
+
+  try {
+    const resp = await fetch(`https://api.github.com/repos/${owner}/${repo}/commits?path=${path}&per_page=1`);
+    if (!resp.ok) throw new Error('Failed fetch commits: ' + resp.status);
+    const data = await resp.json();
+    if (data.length === 0) {
+      statusPanel.textContent = 'No auto-remove activity found.';
+      return;
     }
+    const commit = data[0];
+    const commitDate = new Date(commit.commit.author.date);
+    const now = new Date();
+    const diffMin = Math.floor((now - commitDate) / 60000);
+    statusPanel.textContent = `Last auto-remove: ${diffMin} minute(s) ago. Commit: "${commit.commit.message}"`;
+  } catch (e) {
+    console.error(e);
+    statusPanel.textContent = 'Failed to fetch auto-remove status.';
   }
-  setTimeout(autoExpireLoop,1000);
 }
 
-btnLoad.onclick=loadFile; btnSave.onclick=saveFile;
-autoExpireLoop();
+btnLoad.onclick=loadFile; 
+btnSave.onclick=saveFile;
+setInterval(updateAutoRemoveStatus,30000);
+updateAutoRemoveStatus();
 </script>
 </body>
 </html>
