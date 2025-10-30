@@ -86,7 +86,7 @@ function renderEntries(){
     setTimeout(()=>div.classList.add('show'),50);
     const avatarUrl=`https://github.com/${e.value}.png?size=24`;
     let expireText = '';
-    if(e.expiresAt && !isNaN(e.expiresAt)){ 
+    if(e.expiresAt){ 
       const remaining = Math.max(0, e.expiresAt - now);
       expireText = ' • Expires in ' + msToTime(remaining);
     }
@@ -96,7 +96,7 @@ function renderEntries(){
     </div>`;
     entriesList.appendChild(div);
 
-    if(e.expiresAt && !isNaN(e.expiresAt)){
+    if(e.expiresAt){
       const interval = setInterval(()=>{
         const remaining = Math.max(0, e.expiresAt - Date.now());
         div.querySelector('.rainbow-text').textContent = ttlLabel(e.ttlVal) + ' • Expires in ' + msToTime(remaining);
@@ -117,8 +117,7 @@ async function loadFile(){
     entriesCache=raw.split(/\r?\n/).map(l=>{
       if(!l.trim()) return null;
       const [value, exp] = l.split('|');
-      let expiresAt = null;
-      if(exp && !['perm','vip'].includes(exp)) expiresAt = parseInt(exp);
+      let expiresAt = ['perm','vip'].includes(exp)? null : Number(exp);
       return {value, ttlVal: exp || 'perm', expiresAt};
     }).filter(Boolean);
     renderEntries();
@@ -126,25 +125,10 @@ async function loadFile(){
   }catch(e){ toast(e.message); }
 }
 
-btnAdd.onclick = () => {
-  const val = newEntry.value.trim(); if(!val) return toast('Entry empty');
-  const ttl = ttlSelect.value;
-  const exp = parseTTL(ttl);
-  entriesCache.push({value: val, ttlVal: ttl, expiresAt: exp});
-
-  editor.value = entriesCache.map(e=>{
-    if(e.ttlVal==='perm'||e.ttlVal==='vip') return `${e.value}|${e.ttlVal}`;
-    return `${e.value}|${e.expiresAt}`;
-  }).join('\n');
-
-  renderEntries(); newEntry.value=''; toast('Entry added ✅');
-};
-
 async function saveFile(){
   const owner=ownerEl.value.trim(), repo=repoEl.value.trim(), path=pathEl.value.trim(), token=tokenEl.value.trim();
   if(!owner||!repo||!path||!token) return toast('Owner/Repo/Path/Token required');
   try{
-    toast('Saving...');
     const curResp=await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {headers:{'Authorization':'token '+token}});
     const cur=await curResp.json();
     const sha=cur.sha;
@@ -159,7 +143,26 @@ async function saveFile(){
   }catch(e){ toast(e.message); }
 }
 
-// Status auto-remove
+btnAdd.onclick = async () => {
+  const val = newEntry.value.trim();
+  if (!val) return toast('Entry empty');
+  const ttl = ttlSelect.value;
+  const exp = parseTTL(ttl);
+
+  entriesCache.push({value: val, ttlVal: ttl, expiresAt: exp});
+  editor.value = entriesCache.map(e=>{
+    if(e.ttlVal==='perm'||e.ttlVal==='vip') return `${e.value}|${e.ttlVal}`;
+    return `${e.value}|${e.expiresAt}`;
+  }).join('\n');
+
+  renderEntries();
+  newEntry.value = '';
+  toast('Entry added ✅');
+
+  await saveFile();
+}
+
+// Status auto-remove terakhir dari GitHub
 async function updateAutoRemoveStatus() {
   const owner = ownerEl.value.trim();
   const repo = repoEl.value.trim();
